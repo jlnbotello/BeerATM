@@ -52,3 +52,6 @@ _deps
 
 # Built Visual Studio Code Extensions
 *.vsix
+
+# Spike folder: Not versioned. Some blurred ideas and drafts
+spike/*
