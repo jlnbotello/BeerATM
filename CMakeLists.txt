@@ -8,7 +8,7 @@ set(SOURCE_DIR
 )
 
 set(SOURCE
-    ${SOURCE_DIR}/main.cc
+    ${SOURCE_DIR}/dispenser/flowmeter.cc
 )
 
 set(TEST_DIR
@@ -53,8 +53,8 @@ endif()
 FetchContent_MakeAvailable(googletest)
 
 # Now simply link against gtest or gtest_main as needed. Eg
-add_executable(dispenser_test ${TEST})
-include_directories(include build/_deps/googletest-src/googlemock/include)
+add_executable(dispenser_test ${SOURCE} ${TEST})
+include_directories(include build/_deps/googletest-src/googlemock/include build/_deps/googletest-src/googletest/include)
 target_link_libraries(dispenser_test gtest_main gmock gmock_main)
 enable_testing()
 add_test(NAME DispenserTest COMMAND dispenser_test)
