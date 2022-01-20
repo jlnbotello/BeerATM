@@ -1,15 +1,25 @@
 #include <dispenser/dispenser.hh>
-#include "valve_stub.hh"
+#include <dispenser/valve.hh>
 #include "gtest/gtest.h"
+#include "gmock/gmock.h"
 
-TEST(ValveTests, initialization)
+using namespace beer_atm;
+using ::testing::AtLeast; 
+
+class MockValve : public Valve {
+ public:
+  MOCK_METHOD(void, Enable, (), (override));
+  MOCK_METHOD(void, Disable, (), (override));
+  MOCK_METHOD(ValveState, Status, (), (override));
+  
+};
+
+TEST(ValveTests, enable)
 {
-    // Arrange
-    beer_atm::Valve *val = new beer_atm::ValveStub();
-
-    // Act & Assert
-    EXPECT_EQ(val->Status(), beer_atm::ValveState::OFF);
-
-    // Release
-    delete val;
+    MockValve valve;
+    EXPECT_CALL(valve, Enable())
+    .Times(AtLeast(1));
+    
+    valve.Enable();
 }
+
