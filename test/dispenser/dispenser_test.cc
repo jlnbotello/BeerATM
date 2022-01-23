@@ -1,121 +1,109 @@
 #include <dispenser/dispenser.hh>
-#include <dispenser/valve.hh>
+#include "valve_stub.hh"
 #include <dispenser/flowmeter.hh>
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
-#define SAMPLE_FREQ 100
+#define DEFAULT_SAMPLE_FREQ   100
+#define DEFAULT_FLOWRATE      250   // [ml/sec]
+#define DEFAULT_TOTAL_VOLUME  500   // [ml]
 
 using namespace beer_atm;
-using ::testing::AtLeast; 
 
-class MockValve : public Valve {
- public:
-  MOCK_METHOD(void, Enable, (), (override));
-  MOCK_METHOD(void, Disable, (), (override));
-  MOCK_METHOD(ValveState, Status, (), (override));
-  
+class MockClient {
+  public:
+  MOCK_METHOD(void, Callback, (int ml),());
 };
 
-TEST(ValveTests, enable)
-{
-    MockValve valve;
-    EXPECT_CALL(valve, Enable())
-    .Times(AtLeast(1));
+static MockClient client;
+
+static void OnChangeVolCallback(int ml){
+  client.Callback(ml);
+}
+
+static void simulte_flow(Flowmeter & f, int flowrate, int final_volume, int sample_freq){
+  int time_to_500ml = final_volume/flowrate;  //2 seconds
+  int n_samples = time_to_500ml * sample_freq; 
+
+  for(int i=0; i<= n_samples;i++)
+    f.Integrate(flowrate);
+}
+
+TEST(ValveTests, DisableOnInit){
+    ValveStub valve;
+
+    EXPECT_EQ(valve.Status(), ValveState::OFF);
+}
+
+TEST(ValveTests, Enable){
+    ValveStub valve;
     
     valve.Enable();
+
+    EXPECT_EQ(valve.Status(), ValveState::ON);
 }
 
+TEST(ValveTests, Disable){
+    ValveStub valve;
+    valve.Enable();
 
-/**
- * @brief Construct a new TEST object
- *        GetVolume is zero after creation
- * 
- */
-
-TEST(FlowmeterTests, Initialization){
-  Flowmeter fm(SAMPLE_FREQ);
-  
-  int expected = 0;
-  int result = fm.GetVolume();
-  
-  EXPECT_EQ(result, expected);
+    valve.Disable();
+    
+    EXPECT_EQ(valve.Status(), ValveState::OFF);
 }
 
-/**
- * @brief Construct a new TEST object
- *        Negative value are not valid entries
- */
+TEST(FlowmeterTests, ZeroVolumeOnInit){
+  Flowmeter fm(DEFAULT_SAMPLE_FREQ);
+  
+  EXPECT_EQ(fm.GetVolume(), 0);
+}
 
 TEST(FlowmeterTests, IntegrateNegativeNoHarmful){
-  Flowmeter fm(SAMPLE_FREQ);
+    Flowmeter fm(DEFAULT_SAMPLE_FREQ);
 
-    fm.Integrate(-1);
-    fm.Integrate(-2000);
+    fm.Integrate(-9999);
 
-    int expected = 0;
-    int result = fm.GetVolume();
-
-    EXPECT_EQ(result, expected);
+    EXPECT_EQ(fm.GetVolume(), 0);
 }
 
-/**
- * @brief Construct a new TEST object
- * 
- */
+TEST(FlowmeterTests, GetVolume){
+  Flowmeter fm(DEFAULT_SAMPLE_FREQ);
 
-TEST(FlowmeterTests, GetVolume_500ml){
-  Flowmeter fm(SAMPLE_FREQ);
-  int flowrate = 250; //ml_per_sec
-  int total_volume = 500;
-  int time_to_500ml = total_volume/flowrate;  //2 seconds
-  int n_samples = time_to_500ml * SAMPLE_FREQ;
-  
+  simulte_flow(fm, DEFAULT_FLOWRATE, DEFAULT_TOTAL_VOLUME, DEFAULT_SAMPLE_FREQ);
 
-  for(int i=0; i<= n_samples;i++)
-    fm.Integrate(flowrate);
-  
-  int expected = total_volume;
-  int result = fm.GetVolume();
-
-  EXPECT_EQ(result, expected);
+  EXPECT_EQ(fm.GetVolume(), DEFAULT_TOTAL_VOLUME);
 }
-
 
 TEST(FlowmeterTests, ResetVolume){
-  Flowmeter fm(SAMPLE_FREQ);
+  Flowmeter fm(DEFAULT_SAMPLE_FREQ);  
+  simulte_flow(fm, DEFAULT_FLOWRATE, DEFAULT_TOTAL_VOLUME, DEFAULT_SAMPLE_FREQ);
   
-  fm.Integrate(20);
-  fm.Integrate(20);
   fm.ResetVolume();
-  
-  int expected = 0;
-  int result = fm.GetVolume();
 
-  EXPECT_EQ(result, expected);
+  EXPECT_EQ(fm.GetVolume(), 0);
 }
 
-static int times = 0;
-static void OnChangeVolCallback(int ml){
-    times++;
-}
-
-TEST(FlowmeterTests, DeltaVolumeAlarm){
-  Flowmeter fm(SAMPLE_FREQ);
-  int flowrate = 250; //ml_per_sec
-  int total_volume = 500;
-  int time_to_500ml = total_volume/flowrate;  //2 seconds
-  int n_samples = time_to_500ml * SAMPLE_FREQ;
+TEST(FlowmeterTests, SetAlarm){
+  Flowmeter fm(DEFAULT_SAMPLE_FREQ);
   int delta_vol = 50;
+  int expected = DEFAULT_TOTAL_VOLUME/delta_vol;
+  
+  EXPECT_CALL(client, Callback(delta_vol)).Times(expected);
 
   fm.SetAlarm(delta_vol, OnChangeVolCallback);
+  simulte_flow(fm, DEFAULT_FLOWRATE, DEFAULT_TOTAL_VOLUME, DEFAULT_SAMPLE_FREQ);
+}
+
+TEST(FlowmeterTests, ClearAlarm){
+  Flowmeter fm(DEFAULT_SAMPLE_FREQ);
+  int delta_vol = 50;
+  int half_total_volume = DEFAULT_TOTAL_VOLUME / 2;
+  int n_calls = half_total_volume/delta_vol;
   
-  for(int i=0; i<= n_samples;i++)
-    fm.Integrate(flowrate);
-
-  int expected = 10;
-  int result = times;
-
-  EXPECT_EQ(result, expected);
-
+  EXPECT_CALL(client, Callback(delta_vol)).Times(n_calls);
+  
+  fm.SetAlarm(delta_vol, OnChangeVolCallback);
+  simulte_flow(fm, DEFAULT_FLOWRATE, half_total_volume, DEFAULT_SAMPLE_FREQ);
+  fm.ClearAlarm();
+  simulte_flow(fm, DEFAULT_FLOWRATE, half_total_volume, DEFAULT_SAMPLE_FREQ);
 }
