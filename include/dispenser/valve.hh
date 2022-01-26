@@ -8,10 +8,13 @@ namespace beer_atm {
     
     class Valve {
         public:
+            Valve(){};
             virtual ~Valve() {};
-            virtual void Enable() = 0;
-            virtual void Disable() = 0;
-            virtual ValveState Status() = 0;
+            virtual void Enable() {status = ValveState::ON;};
+            virtual void Disable() {status = ValveState::OFF;};
+            virtual ValveState Status(){return status;};
+        protected:
+            ValveState status = ValveState::OFF;
     };
 }
-#endif /* CLASS_VALUE_H */
+#endif /* CLASS_VALVE_H */

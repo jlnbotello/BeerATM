@@ -1,6 +1,7 @@
 #include <dispenser/dispenser.hh>
-#include "valve_stub.hh"
 #include <dispenser/flowmeter.hh>
+#include <dispenser/tank.hh>
+#include <dispenser/valve.hh>
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
@@ -30,13 +31,13 @@ static void simulte_flow(Flowmeter & f, int flowrate, int final_volume, int samp
 }
 
 TEST(ValveTests, DisableOnInit){
-    ValveStub valve;
+    Valve valve;
 
     EXPECT_EQ(valve.Status(), ValveState::OFF);
 }
 
 TEST(ValveTests, Enable){
-    ValveStub valve;
+    Valve valve;
     
     valve.Enable();
 
@@ -44,7 +45,7 @@ TEST(ValveTests, Enable){
 }
 
 TEST(ValveTests, Disable){
-    ValveStub valve;
+    Valve valve;
     valve.Enable();
 
     valve.Disable();
@@ -106,4 +107,57 @@ TEST(FlowmeterTests, ClearAlarm){
   simulte_flow(fm, DEFAULT_FLOWRATE, half_total_volume, DEFAULT_SAMPLE_FREQ);
   fm.ClearAlarm();
   simulte_flow(fm, DEFAULT_FLOWRATE, half_total_volume, DEFAULT_SAMPLE_FREQ);
+}
+
+TEST(TankTests, InitException)
+{
+  EXPECT_THROW({
+    try
+    {
+      Tank(-50, "IPA #3");
+    }
+    catch(const std::invalid_argument &e)
+    {
+      EXPECT_STREQ( "invalid capacity", e.what() );
+      throw;
+    }
+  },std::invalid_argument);
+}
+
+TEST(TankTests, GetCapacity)
+{
+  Tank tank(50, "IPA #3");
+  EXPECT_EQ(tank.GetCapacity(), 50);
+}
+
+TEST(TankTests, GetRemaining) 
+{
+    Tank tank(50, "IPA #3");
+    EXPECT_EQ(tank.GetRemaining(), 50);
+}
+
+TEST(TankTests, Withdraw) 
+{
+  float w = 20.5, r = 29.5;
+  Tank tank(w+r, "IPA #3");
+
+  tank.Withdraw(w);
+
+  EXPECT_EQ(tank.GetRemaining(),r);
+}
+
+TEST(TankTests, SafeWithdraw) 
+{
+  
+  Tank tank(50, "IPA #3");
+
+  tank.Withdraw(50.5);
+
+  EXPECT_EQ(tank.GetRemaining(),0);
+}
+
+TEST(TankTests, GetName) 
+{ 
+  Tank tank(50, "IPA #3");
+  EXPECT_EQ(tank.GetName(),"IPA #3");
 }
