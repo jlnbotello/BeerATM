@@ -1,41 +1,30 @@
 cmake_minimum_required(VERSION 3.13)
 
-set(PROJECT_NAME
-    BeerAtm
-)
-set(SOURCE_DIR
-    src
-)
+set(PROJECT_NAME P01)
+set(PROJECT_DESC "Event manager testing")
+
+set(SRC_DIR  projects/${PROJECT_NAME}/src)
+set(INC_DIR  projects/${PROJECT_NAME}/inc)
+set(TEST_DIR projects/${PROJECT_NAME}/test)
 
 set(SOURCE
-    ${SOURCE_DIR}/dispenser/flowmeter.cc
-)
-
-set(TEST_DIR
-    test
+    ${SRC_DIR}/event_manager.cc    
 )
 
 set(TEST
-    ${TEST_DIR}/dispenser/dispenser_test.cc
-)
-
-set(LIBRARIES_DIR
-    lib
-)
-set(LIBRARIES 
-
+    ${TEST_DIR}/ev_manager_test.cc
 )
 
 # specify the C++ standard
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-
-
+set(CMAKE_CXX_COMPILER "g++.exe")
+set(CMAKE_BUILD_TYPE "Debug")
 # set the project name and version
 project(${PROJECT_NAME} 
     VERSION 0.1
-    DESCRIPTION "Beer ATM System"
+    DESCRIPTION ${PROJECT_DESC}
     LANGUAGES CXX)
 
 include(FetchContent)
@@ -53,8 +42,8 @@ endif()
 FetchContent_MakeAvailable(googletest)
 
 # Now simply link against gtest or gtest_main as needed. Eg
-add_executable(dispenser_test ${SOURCE} ${TEST})
-include_directories(include build/_deps/googletest-src/googlemock/include build/_deps/googletest-src/googletest/include)
-target_link_libraries(dispenser_test gtest_main gmock gmock_main)
+include_directories(${INC_DIR} build/_deps/googletest-src/googlemock/include build/_deps/googletest-src/googletest/include)
+add_executable(${PROJECT_NAME} ${SOURCE} ${TEST})
+target_link_libraries(${PROJECT_NAME}  gtest_main gmock gmock_main)
 enable_testing()
-add_test(NAME DispenserTest COMMAND dispenser_test)
+add_test(NAME ${PROJECT_NAME} COMMAND ${PROJECT_NAME})
