@@ -1,18 +1,36 @@
 cmake_minimum_required(VERSION 3.13)
 
-set(PROJECT_NAME P01)
-set(PROJECT_DESC "Event manager testing")
+set(PROJECT_NAME P02)
+set(PROJECT_DESC "Project")
 
 set(SRC_DIR  projects/${PROJECT_NAME}/src)
 set(INC_DIR  projects/${PROJECT_NAME}/inc)
 set(TEST_DIR projects/${PROJECT_NAME}/test)
 
+file(GLOB CPP_SOURCE
+    ${SRC_DIR}/*.cc
+)
+
+file(GLOB C_SOURCE
+    ${SRC_DIR}/*.c
+)
+
 set(SOURCE
-    ${SRC_DIR}/event_manager.cc    
+    ${CPP_SOURCE}
+    ${C_SOURCE}
+)
+
+file(GLOB CPP_TEST
+    ${TEST_DIR}/*.cc
+)
+
+file(GLOB C_TEST
+    ${TEST_DIR}/*.c
 )
 
 set(TEST
-    ${TEST_DIR}/ev_manager_test.cc
+    ${CPP_TEST}
+    ${C_TEST}
 )
 
 # specify the C++ standard
@@ -20,12 +38,13 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 set(CMAKE_CXX_COMPILER "g++.exe")
+set(CMAKE_C_COMPILER "gcc.exe")
 set(CMAKE_BUILD_TYPE "Debug")
 # set the project name and version
 project(${PROJECT_NAME} 
     VERSION 0.1
     DESCRIPTION ${PROJECT_DESC}
-    LANGUAGES CXX)
+    LANGUAGES CXX C)
 
 include(FetchContent)
 FetchContent_Declare(
